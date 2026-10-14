@@ -1,0 +1,97 @@
+{
+  "name": "Autonomous AI Agent Dispatcher & B2B Notification Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-intake",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Lead scoring and validation logic\nconst item = items[0].json;\nconst score = (item.email && item.email.includes('@')) ? 80 : 20;\nreturn [{ json: { ...item, score, qualified: score >= 50 } }];"
+      },
+      "id": "2",
+      "name": "Enrich & Score",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$node[\"Enrich & Score\"].json[\"qualified\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Filter Qualified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "DISPATCHED_TO_HIGH_PRIORITY_QUEUE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Dispatch Priority",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [850, 200]
+    }
+  ],
+  "connections": {
+    "Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "Enrich & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich & Score": {
+      "main": [
+        [
+          {
+            "node": "Filter Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Qualified": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
